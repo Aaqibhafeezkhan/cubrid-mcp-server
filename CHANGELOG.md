@@ -54,6 +54,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README gains a **Related Projects** section linking pycubrid, sqlalchemy-cubrid, and cubrid-cookbook-python, matching the sibling packages' READMEs — every cubrid-lab PyPI page now leads to the runnable examples.
 
 ### CI
+- **The PR-body closing guard keeps list context after a lazy continuation line** — a
+  list item followed by an unindented continuation line, a blank line and an
+  indented `Closes other/repo#N` is still list text on GitHub, so the `PR title`
+  check must scan it. The guard previously ended the list context at the
+  continuation line and skipped the closure as indented code. The list context
+  now ends only at an unindented paragraph that follows a blank line. The
+  regression suite gains this case. A heading, block quote or fence placed
+  directly under a list item is treated as a continuation too, so indented code
+  after it may block a PR but never lets a closure through.
 - **PRs cannot directly auto-close another repository's issue** — the existing
   required `PR title` check rejects foreign closing keywords in PR-body text
   while allowing `Closes #N` for local issues and `Refs owner/repo#N` for
