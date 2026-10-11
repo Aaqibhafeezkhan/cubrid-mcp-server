@@ -99,19 +99,40 @@ These rules add to the release procedure above; the procedures and gates in
 
 ## Development Workflow (cubrid-lab org standard)
 
-All non-trivial work MUST follow this cycle:
+The required review route is selected by the tool that **actually developed**
+the change, and recorded in the PR. Review requested, green CI, self-review
+and an automated "approval recommended" summary are not completed reviews.
 
-1. **Oracle Design Review** — validate approach before implementation.
-2. **Implementation** — build with tests, following existing patterns.
-3. **Documentation Update** — update all affected docs (README tool table, configuration, CHANGELOG) in the same PR.
-4. **Oracle Post-Implementation Review** — review correctness, edge cases, and consistency before merging.
+**OpenCode with Oracle**, for non-trivial work:
+1. Obtain Oracle pre-implementation **design** review before editing.
+2. Implement the agreed scope, preserving read-only/write-mode, audit,
+   connection/timeout and MCP stdout invariants, with tests.
+3. Update only affected documentation, such as `README.md`, `docs/TOOLS.md`,
+   `docs/SECURITY_MODEL.md` and `CHANGELOG.md`, under the existing docs policy.
+4. Obtain Oracle post-implementation **code** review, disposition findings,
+   and record both reviews plus executed validation.
 
-Trivial changes (typos, single-line fixes) may skip phases 1 and 4.
+Trivial OpenCode changes may omit phases 1 and 4 only with a recorded reason.
+Oracle pre/post reviews satisfy this route; a further Copilot review is not
+automatically required. Existing branch/maintainer and required CI conditions
+still apply.
 
-Maintainers coordinate Oracle/Codex/agent tooling, integration evidence, release
-classification, labels and the final review record. Outside contributors provide
-ordinary motivation, code, tests and affected docs; internal Oracle/agent setup or
-access is not a prerequisite for proposing a contribution.
+**Standalone agents (Claude Code, Codex, ChatGPT, or other agent tools):**
+open a PR after implementation, tests and docs, then **wait for a substantive
+submitted GitHub Copilot review or a review by another person** before merging.
+A submitted Copilot COMMENTED review with actual code assessment can count;
+it is not GitHub APPROVED status.
+Requested/pending reviews, Copilot suggestion summaries without substantive
+assessment, self-review and passing CI are insufficient. Evaluate findings
+against the final relevant head. Without the required review, leave the PR
+unmerged (Draft/pending review).
+
+**Human contributions:** follow ordinary contributor requirements;
+maintainers arrange any project-specific tooling and integration. This route
+is not a fallback for unnamed standalone agent tools, which use the route above.
+Installing OpenCode, Oracle, Copilot, Claude Code or Codex is never an
+outside-contributor prerequisite. Preserve original authorship and use
+attribution only for tools actually involved.
 
 ## Issue specification and ownership
 
@@ -149,6 +170,27 @@ docs tasks need only the applicable fields.
   incomplete work Draft and report blockers and a proposed split.
 - Preserve contributor history. Do not repeatedly re-review an external PR until its
   author updates the head.
+
+## Review disposition and merge evidence
+
+- Record the development route, Oracle pre/post evidence or submitted GitHub
+  review, reviewed head SHA and pending/complete status in the PR.
+- Classify findings as fixed (commit + focused test), rejected with
+  contract/reproduction evidence, or deferred with a linked issue. Keep
+  confirmed security-sensitive reproductions in the private reporting path.
+- Leave one **final** reply per inline review finding. A maintainer or reviewer
+  resolves its thread only after validating the updated code and evidence;
+  an outdated diff or "Fixed" reply alone is not resolution. Do not bulk-resolve
+  historical threads or spam requests for another AI review.
+- Keep one editable agent-owned English PR status comment for the aggregate
+  findings, outstanding threads, verification results and unrun checks.
+- Apply the existing two-published-AI-review-round budget. If review is still
+  pending or unresolved at that limit, retain Draft and request a maintainer
+  decision rather than bypassing review or endlessly revising.
+- Never merge with the required GitHub review still pending, failed required
+  CI, or unresolved critical/security findings. Record a maintainer decision
+  for any other open finding. These are process rules, not an auto-merge or
+  branch-protection change.
 
 ## Issue Labeling (cubrid-lab org standard)
 
@@ -221,7 +263,7 @@ Do not mark work complete until code, tests, and documentation are consistent.
 ## Commit Convention
 
 Issue titles, pull request titles and commit subjects follow
-[CONTRIBUTING.md - Pull request and commit titles](CONTRIBUTING.md#pull-request-and-commit-titles):
+[CONTRIBUTING.md](CONTRIBUTING.md#pull-request-and-commit-titles):
 `type(scope)!: description` with types `feat`, `fix`, `docs`, `test`, `perf`,
 `refactor`, `ci`, `build`, `chore`, `style`, `revert`; English, lowercase start
 unless the first word is an API name, acronym, or proper noun; no trailing
