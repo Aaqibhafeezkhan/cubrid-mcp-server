@@ -115,6 +115,38 @@ class Database:
         self._connection: Any = None
         self._lock = threading.RLock()
         self._serial_attribute_column: str | None = None
+        self._owner_qualified_names: bool | None = None
+
+    def owner_qualified_names(self) -> bool:
+        """Whether table names are unique per owner, probed once per connection.
+
+        From CUBRID 11.2 on, two users may each own a table with the same name,
+        and the catalog views (``db_attribute``, ``db_index``, ``db_index_key``,
+        ``db_direct_super_class``) gain ``owner_name`` columns to tell them apart.
+        Before 11.2 table names are unique in the database and those views have
+        no owner column. Probed with a zero-row SELECT and cached like
+        :meth:`serial_attribute_column`.
+        """
+        with self._lock:
+            if self._owner_qualified_names is not None:
+                return self._owner_qualified_names
+            probed = self.connect()
+            try:
+                self.fetch_all('SELECT "owner_name" FROM db_attribute WHERE 1 = 0')
+            except DatabaseError as exc:
+                # Only the server rejecting the column answers the question;
+                # a lost connection or a timeout must not be cached as "no".
+                if exc.__cause__ is None or not _is_server_sql_error(exc.__cause__):
+                    raise
+                found = False
+            else:
+                found = True
+            # Cache the answer only for the connection it was probed on: if the
+            # rollback after the probe failed, the connection was discarded and
+            # the next one may reach another server version.
+            if self._connection is probed:
+                self._owner_qualified_names = found
+            return found
 
     def serial_attribute_column(self) -> str:
         """Resolve ``db_serial``'s attribute column once per connection.
@@ -175,13 +207,15 @@ class Database:
     def _discard_connection(self) -> None:
         """Drop the cached connection, closing it first on a best-effort basis.
 
-        Also forgets the per-connection ``db_serial`` column probe: the next
-        connection may reach a different CUBRID version (e.g. after a broker
-        failover), so it must be re-probed rather than reused.
+        Also forgets the per-connection catalog probes (``db_serial`` column and
+        owner-qualified names): the next connection may reach a different CUBRID
+        version (e.g. after a broker failover), so they must be re-probed rather
+        than reused.
         """
         connection = self._connection
         self._connection = None
         self._serial_attribute_column = None
+        self._owner_qualified_names = None
         if connection is not None:
             try:
                 connection.close()
@@ -190,6 +224,7 @@ class Database:
 
     def close(self) -> None:
         self._serial_attribute_column = None
+        self._owner_qualified_names = None
         if self._connection is not None:
             try:
                 self._connection.close()
