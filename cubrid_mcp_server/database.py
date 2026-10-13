@@ -340,8 +340,14 @@ class Database:
                     self._safe_close_cursor(cursor)
 
     @contextmanager
-    def exclusive(self) -> Iterator[Any]:
-        """Hold the connection lock across multiple statements (e.g. SET TRACE ... SHOW TRACE)."""
+    def exclusive(self, *, rollback_on_sql_error: bool = True) -> Iterator[Any]:
+        """Hold the connection lock across multiple statements (e.g. SET TRACE ... SHOW TRACE).
+
+        After a server-side SQL error the transaction is rolled back and the
+        connection kept. A caller whose block already ends the transaction on
+        every exit (``trace_enabled``) passes ``rollback_on_sql_error=False`` so
+        exactly one rollback is sent.
+        """
         with self._lock:
             connection = self.connect()
             try:
@@ -349,8 +355,16 @@ class Database:
             except Exception as exc:
                 if _is_timeout_error(exc):
                     raise self._timeout_error(exc) from exc
-                # Lazy recovery on non-timeout failure, mirroring ``cursor``.
-                self._discard_connection()
+                if _is_server_sql_error(exc):
+                    # As in ``cursor``: the server rejected a statement but the
+                    # session is in sync, so end the transaction and keep the
+                    # connection (a failing rollback still discards it). Skip it
+                    # when cleanup inside the block already discarded it.
+                    if rollback_on_sql_error and self._connection is connection:
+                        self._rollback_or_discard(connection)
+                else:
+                    # Lazy recovery on any other failure, mirroring ``cursor``.
+                    self._discard_connection()
                 if isinstance(exc, DatabaseError):
                     raise
                 # Raw driver errors can embed SQL, schema or host details.
@@ -369,7 +383,8 @@ class Database:
         timeout the socket is dead and ``exclusive()`` discards the connection,
         so no cleanup statement is sent.
         """
-        with self.exclusive() as connection:
+        # _reset_trace_state below rolls back (or discards) on every exit.
+        with self.exclusive(rollback_on_sql_error=False) as connection:
             cursor = connection.cursor()
             timed_out = False
             try:
