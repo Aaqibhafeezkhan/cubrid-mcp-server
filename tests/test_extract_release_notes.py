@@ -84,3 +84,26 @@ def test_usage_error_on_extra_arguments(tmp_path: Path) -> None:
     assert result.returncode == 2
     assert "usage: extract_release_notes.py vX.Y.Z" in result.stderr
     assert not (tmp_path / "RELEASE_NOTES.md").exists()
+
+
+def test_absent_changelog_fails_closed(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "v1.2.0"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert "ERROR: CHANGELOG.md not found" in result.stderr
+    assert not (tmp_path / "RELEASE_NOTES.md").exists()
+
+
+def test_empty_section_fails_closed(tmp_path: Path) -> None:
+    empty_section_changelog = (
+        "# Changelog\n\n## [1.2.0] - 2026-10-01\n\n"
+        "## [1.1.0] - 2026-09-01\n\n### Fixed\n\n- Older.\n"
+    )
+    result = extract(tmp_path, empty_section_changelog, "v1.2.0")
+    assert result.returncode == 1
+    assert "ERROR: Empty CHANGELOG section for 1.2.0" in result.stderr
+    assert not (tmp_path / "RELEASE_NOTES.md").exists()
