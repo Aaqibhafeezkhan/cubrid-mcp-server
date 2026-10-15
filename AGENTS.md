@@ -123,18 +123,34 @@ and an automated "approval recommended" summary are not completed reviews.
 
 Trivial OpenCode changes may omit phases 1 and 4 only with a recorded reason.
 Oracle pre/post reviews satisfy this route; a further Copilot review is not
-automatically required. Existing branch/maintainer and required CI conditions
+required. Existing branch/maintainer and required CI conditions
 still apply.
 
 **Standalone agents (Claude Code, Codex, ChatGPT, or other agent tools):**
-open a PR after implementation, tests and docs, then **wait for a substantive
-submitted GitHub Copilot review or a review by another person** before merging.
-A submitted Copilot COMMENTED review with actual code assessment can count;
-it is not GitHub APPROVED status.
+open a PR after implementation, tests and docs, then **obtain a substantive
+review by someone other than the PR's author** before merging (maintainer
+decision, 2026-10-15). Any one of these counts:
+- a submitted GitHub Copilot review with an actual code assessment;
+- a review by another person;
+- a review by an independent reviewer agent: it runs in a fresh context
+  separate from the authoring agent, with read-only access, and wrote none of
+  the change (the authoring session may launch it). Its review is recorded on
+  the PR as a review or comment giving the reviewer, the reviewed head SHA and
+  its findings.
+
+Copilot review is optional, and no CI check or ruleset rule enforces review
+evidence. A Copilot COMMENTED review is not GitHub APPROVED status.
 Requested/pending reviews, Copilot suggestion summaries without substantive
-assessment, self-review and passing CI are insufficient. Evaluate findings
-against the final relevant head. Without the required review, leave the PR
-unmerged (Draft/pending review).
+assessment, self-review (including the authoring agent reviewing its own work
+in the same context) and passing CI are insufficient. Evaluate findings against
+the final relevant head. Without the required review, leave the PR unmerged
+(Draft/pending review).
+
+Changes to `safety.py`, `database.py`, `audit.py`, `server.py`, or to
+workflows that hold write permissions or perform releases, get stricter scrutiny: the
+review must explicitly assess the read-only/write-mode, audit-redaction and MCP
+stdout invariants they carry, and a maintainer confirms that disposition before
+merge.
 
 **Human contributions:** follow ordinary contributor requirements;
 maintainers arrange any project-specific tooling and integration. This route
@@ -187,8 +203,9 @@ docs tasks need only the applicable fields.
 - AI severity is not authority to expand scope. Out-of-scope findings become
   separate issues unless the maintainer explicitly expands the contract.
 - Default to two published AI review rounds per scoped PR/task (initial review plus
-  one corrective re-review). Further rounds or scope expansion require explicit
-  maintainer direction.
+  one corrective re-review). A Copilot review and a recorded independent-agent
+  review each count as one round. Further rounds or scope expansion require
+  explicit maintainer direction.
 - Never merge with unresolved critical/security defects or failed required CI. Keep
   incomplete work Draft and report blockers and a proposed split.
 - Preserve contributor history. Do not repeatedly re-review an external PR until its
@@ -196,8 +213,9 @@ docs tasks need only the applicable fields.
 
 ## Review disposition and merge evidence
 
-- Record the development route, Oracle pre/post evidence or submitted GitHub
-  review, reviewed head SHA and pending/complete status in the PR.
+- Record the development route, Oracle pre/post evidence or the independent
+  review (Copilot, a person, or a separate-context reviewer agent), reviewer,
+  reviewed head SHA and pending/complete status in the PR.
 - Classify findings as fixed (commit + focused test), rejected with
   contract/reproduction evidence, or deferred with a linked issue. Keep
   confirmed security-sensitive reproductions in the private reporting path.
@@ -210,7 +228,7 @@ docs tasks need only the applicable fields.
 - Apply the existing two-published-AI-review-round budget. If review is still
   pending or unresolved at that limit, retain Draft and request a maintainer
   decision rather than bypassing review or endlessly revising.
-- Never merge with the required GitHub review still pending, failed required
+- Never merge with the required review still pending, failed required
   CI, or unresolved critical/security findings. Record a maintainer decision
   for any other open finding. These are process rules, not an auto-merge or
   branch-protection change.
