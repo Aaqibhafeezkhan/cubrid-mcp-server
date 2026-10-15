@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Agent PR review route: Copilot or a maintainer** — maintainer decision of 2026-10-15: a standalone-agent PR needs a substantive submitted Copilot review or a review by a maintainer (a code owner other than the PR's author), recorded on the PR. Reviews by other people or by other AI agents do not satisfy the route. No CI check enforces it; whether to add one is pending (#317). The two-round AI review budget stays. New: under every route, changes to `safety.py`, `database.py`, `audit.py`, `server.py` and workflows that hold write permissions or perform releases need a review that explicitly assesses their invariants, and a maintainer confirms that disposition before merge. `AGENTS.md`, `CONTRIBUTING.md` and the PR template are updated; the Korean docs carry no review rules, so nothing there changes. Refs #317.
 
+### CI
+
+- **Advisory `agent-review` check for review evidence** — `.github/workflows/agent-review.yml` runs `scripts/agent_review_gate.py` from the base branch with a read-only token on every pull request and review event and reports whether GitHub's own review records meet the review route of 2026-10-15: a substantive Copilot review within the two-round AI review budget, or a maintainer's `APPROVED` review or `COMMENTED` review that opens an inline thread. Changes to `safety.py`, `database.py`, `audit.py`, `server.py`, `config.py`, `__main__.py`, `context.py`, any workflow and the gate itself need a maintainer's `APPROVED` review. Pending requests, PR-body checkboxes, summary-only bot text, other people's reviews and stale reviews never count; unresolved or author-resolved critical or security threads and missing API data fail the check. release-please PRs that change only release-please files, and Dependabot PRs, are exempt. The check is advisory: a pull request can publish a check with the same name, so it must not be made a required check until it is posted from an identity a PR cannot impersonate. `CONTRIBUTING.md` documents the rules (#317).
+
 ## [0.5.1] - 2026-10-14
 
 ### Upgrade notes
