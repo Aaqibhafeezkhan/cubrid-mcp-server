@@ -61,6 +61,8 @@ each task's base and fix, and it checks:
 
 - the default configuration is read-only, with write mode and the audit log off;
 - the read-only check rejects writes, DDL and stacked statements;
+- the query whitelist (read-only off) still rejects writes and DDL, and write mode
+  accepts only a single INSERT, UPDATE or DELETE;
 - an audit record holds no raw SQL or literal value, and nothing reaches stdout;
 - the package has no `print()` to stdout (no `file=` or `file=None`) and no use of
   `sys.stdout`.
@@ -186,7 +188,12 @@ fixture. The failures cover:
 - an audit leak that adds raw SQL to the record;
 - stale evidence: results recorded for another patch;
 - an unrelated modification;
-- a false live claim.
+- a false live claim;
+- a missing *not verified* statement;
+- cleanup that keeps going after its first failure;
+- cleanup statements sent after a query timeout;
+- a cleanup failure raised over the query's own error;
+- a write checker hollowed out while its calls stay in place.
 
 `make agent-eval-check` fails when any fixture grades differently from its
 `expected.json`.
@@ -196,6 +203,8 @@ fixture. The failures cover:
 | Task | Original fix | What it exercises |
 |---|---|---|
 | [`read-only-side-effect-functions`](tasks/read-only-side-effect-functions/task.json) | #295, `d17bf58` | SELECT statements that change data through INCR/DECR or serial advances (read-only bypass) |
+| [`audit-category-after-comments`](tasks/audit-category-after-comments/task.json) | #179, `2c64d0f` | the audit category read past leading comments, with the record kept redacted |
+| [`trace-cleanup-discards-connection`](tasks/trace-cleanup-discards-connection/task.json) | #264, `739dca0` | a failed trace cleanup retiring the shared connection (cleanup error path) |
 
 None of the tasks has recorded live evidence. Each one lists the integration test that
 would show its behavior. A candidate without a lab server must report that test as
