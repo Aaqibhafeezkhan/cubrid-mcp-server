@@ -186,6 +186,7 @@ def test_registry_named_selection_is_case_insensitive() -> None:
     }
     registry = ConnectionRegistry.from_env(env)
     reporting = registry.config_for("reporting")
+    assert reporting.host == "reporting-db"
     assert registry.config_for("REPORTING") is reporting
     assert registry.config_for("  RePoRtInG  ") is reporting
 
