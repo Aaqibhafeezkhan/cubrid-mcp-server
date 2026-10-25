@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   label and the new `issue-triage.yml` workflow adds it to every opened issue. Priority and
   size are still set by a maintainer, who removes the label after triage.
 
+### Tests
+
+- **Named-connection invalid values keep the prefixed variable name (#434)** — `tests/test_config.py` now checks that an invalid `PORT`, `MCP_MAX_ROWS`, `MCP_MAX_CHARS`, `MCP_MAX_SQL_LENGTH` or `MCP_QUERY_TIMEOUT` on a named connection raises `ConfigError` naming the full `CUBRID_<NAME>_...` variable and not the bare default one, and that a blank required named variable is reported like a missing one. Test-only; `config.py` is unchanged. Refs #434.
+
 ## [0.5.6] - 2026-10-25
 
 ### Changed
